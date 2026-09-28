@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ScribbleSync</title>
+
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+
+<div id="app">
+
+    <header id="toolbar">
+        <div class="brand">
+            <strong>ScribbleSync</strong>
+            <span>Day 1</span>
+        </div>
+
+        <div class="toolbar-actions">
+            <button id="add-note-btn">Add Note</button>
+            <button id="undo-btn" disabled>Undo</button>
+            <button id="redo-btn" disabled>Redo</button>
+            <button id="timer-btn" disabled>Timer</button>
+        </div>
+    </header>
+
+    <main id="canvas-viewport">
+        <div id="canvas-world"></div>
+
+        <div id="help">
+            Drag background → pan<br>
+            Scroll → zoom<br>
+            Drag note header → move
+        </div>
+    </main>
+
+</div>
+
+<script type="module" src="./js/main.js"></script>
+
+</body>
+</html>
