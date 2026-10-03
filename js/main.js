@@ -58,3 +58,16 @@ function updateHistoryButtons(){
     redoButton.disabled = !canvasManager.canRedo();
 
 }
+document.addEventListener("keydown",(event) => {
+
+        if(event.ctrlKey && event.key.toLowerCase() === "z"){
+            event.preventDefault();
+            canvasManager.undo();
+        }
+
+        if(event.ctrlKey && event.key.toLowerCase() === "y"){
+            event.preventDefault();
+            canvasManager.redo();
+        }
+    }
+);
