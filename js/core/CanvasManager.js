@@ -1,131 +1,256 @@
 import { generateId } from "../utils/idgen.js";
 
-export class CanvasManager{
+export class CanvasManager {
+    #notes;
+    #nextZIndex;
+    #onChange;
 
-    constructor(viewport, world){
+    constructor(viewport, world, options = {}) {
         this.viewport = viewport;
         this.world = world;
 
-        this.notes = new Map();
-        this.nextZIndex = 1;
+        this.#notes = new Map();
+        this.#nextZIndex = 1;
 
-        this.panX = viewport.clientWidth /2;
+        this.#onChange = options.onChange ?? (() => {});
+
+        this.panX = viewport.clientWidth / 2;
         this.panY = viewport.clientHeight / 2;
+
         this.scale = 1;
 
         this.activeInteraction = null;
 
         this.bindEvents();
         this.updateWorldTransform();
-
     }
 
-    // need to clear the working to bindevents
+    // Notifies the application that board state changed.
+    #notifyChange() {
+        this.#onChange(this.getSnapshot());
+    }
 
-    bindEvents(){
+    // Binds all canvas events.
+    bindEvents() {
         this.viewport.addEventListener(
-            "pointerDown",
+            "pointerdown",
             (event) => this.handlePointerDown(event)
         );
+
         this.viewport.addEventListener(
-            "pointerMove",
-            (event) => this.handlePointerDown(event)
+            "pointermove",
+            (event) => this.handlePointerMove(event)
         );
+
         this.viewport.addEventListener(
             "pointerup",
-            (event) => this.handlePointerDown(event)
+            (event) => this.handlePointerUp(event)
         );
+
         this.viewport.addEventListener(
             "pointercancel",
-            (event) => this.handlePointerDown(event),
-            { passive: false }
-        );        
+            (event) => this.handlePointerUp(event)
+        );
 
+        this.viewport.addEventListener(
+            "wheel",
+            (event) => this.handleWheel(event),
+            { passive: false }
+        );
     }
 
-    addNote(){
+    addNote() {
         console.log("note added");
-        const rect = this.viewport.getBoundingClientRect();
+
+        const rect =
+            this.viewport.getBoundingClientRect();
 
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
 
+        const worldPosition =
+            this.screenToWorld(
+                centerX,
+                centerY
+            );
 
-        const worldPosition = this.screenToWorld(
-            centerX,
-            centerY
-        );
+        const offset =
+            (this.#notes.size % 8) * 25;
 
-
-        const offset = (this.notes.size % 8) * 25;
         const note = {
             id: generateId(),
+
             x: worldPosition.x - 90 + offset,
             y: worldPosition.y - 65 + offset,
+
             w: 180,
             h: 130,
+
             text: "Double-click to edit",
-            zIndex: this.nextZIndex++,
+
+            zIndex: this.#nextZIndex++,
+
             createdAt: new Date().toISOString()
         };
 
-        this.notes.set(note.id, note);
-        this.renderNote(note);
-        return note;
+        this.#notes.set(
+            note.id,
+            note
+        );
 
+        this.renderNote(note);
+
+        this.#notifyChange();
+
+        return note;
     }
 
-    updateNote(id, changes){
+    updateNote(id, changes) {
+        console.log("update note");
 
-        console.log("update note")
+        const note =
+            this.#notes.get(id);
 
-        const note = this.notes.get(id);
-
-        if(!note){
+        if (!note) {
             return null;
         }
 
-        Object.assign(note, changes);
+        Object.assign(
+            note,
+            changes
+        );
+
+        this.#notifyChange();
 
         return note;
     }
 
-    deleteNote(id){
-        const note = this.notes.get(id);
+    deleteNote(id) {
+        console.log("note deleted");
 
-        if(!note) return false;
-        this.notes.delete(id);
+        const note =
+            this.#notes.get(id);
 
-        const element = this.world.querySelector(
-            `[data-note-id="${id}"]`
-        );
+        if (!note) {
+            return false;
+        }
+
+        this.#notes.delete(id);
+
+        const element =
+            this.world.querySelector(
+                `[data-note-id="${id}"]`
+            );
 
         element?.remove();
+
+        this.#notifyChange();
+
         return true;
     }
 
-    screenToWorld(screenX, screenY){
+    // Returns a copy of all notes.
+    getSnapshot() {
+        return Array.from(
+            this.#notes.values()
+        ).map((note) => ({
+            ...note
+        }));
+    }
 
-        return{
-            x: (screenX - this.panX) / this.scale,
-            y: (screenY - this.panY) / this.scale
+    // Loads notes from localStorage snapshot.
+    loadSnapshot(snapshot) {
+
+        if (!Array.isArray(snapshot)) {
+            return;
+        }
+
+        this.#notes.clear();
+
+        this.world.innerHTML = "";
+
+        let highestZIndex = 0;
+
+        snapshot.forEach((savedNote) => {
+
+            const note = {
+                id: savedNote.id,
+                x: savedNote.x,
+                y: savedNote.y,
+                w: savedNote.w,
+                h: savedNote.h,
+                text: savedNote.text,
+                zIndex: savedNote.zIndex,
+                createdAt: savedNote.createdAt
+            };
+
+            this.#notes.set(
+                note.id,
+                note
+            );
+
+            highestZIndex = Math.max(
+                highestZIndex,
+                note.zIndex
+            );
+
+            this.renderNote(note);
+        });
+
+        this.#nextZIndex =
+            highestZIndex + 1;
+    }
+
+    // Clears all notes from the board.
+    clear() {
+
+        this.#notes.clear();
+
+        this.world.innerHTML = "";
+
+        this.#nextZIndex = 1;
+
+        this.#notifyChange();
+    }
+
+    screenToWorld(screenX, screenY) {
+        return {
+            x:
+                (screenX - this.panX) /
+                this.scale,
+
+            y:
+                (screenY - this.panY) /
+                this.scale
         };
     }
 
-    renderNote(note){
+    renderNote(note) {
 
-        const noteElement = document.createElement("div");
+        const noteElement =
+            document.createElement("div");
 
-        noteElement.className = "sticky-note";
-        // what is .dataset for??
-        noteElement.dataset.noteId= note.id;
+        noteElement.className =
+            "sticky-note";
 
-        noteElement.style.left = `${note.x}px`;
-        noteElement.style.top = `${note.y}px`;
-        noteElement.style.width = `${note.w}px`;
-        noteElement.style.height = `${note.h}px`;
+        // Stores note id inside the DOM element.
+        noteElement.dataset.noteId =
+            note.id;
 
-        noteElement.style.zIndex = note.zIndex;
+        noteElement.style.left =
+            `${note.x}px`;
+
+        noteElement.style.top =
+            `${note.y}px`;
+
+        noteElement.style.width =
+            `${note.w}px`;
+
+        noteElement.style.height =
+            `${note.h}px`;
+
+        noteElement.style.zIndex =
+            note.zIndex;
 
         noteElement.innerHTML = `
             <div class="note-header">
@@ -151,100 +276,196 @@ export class CanvasManager{
             ></div>
         `;
 
-        const contentElement = noteElement.querySelector(".note-content");
-        contentElement.textContent = note.text;
+        const contentElement =
+            noteElement.querySelector(
+                ".note-content"
+            );
 
+        contentElement.textContent =
+            note.text;
 
-            //eventlisteners working
-        contentElement.addEventListener("input", () => {
-            this.updateNote(note.id, {
-                text: contentElement.textContent
-            });
+        // Event listener for editing.
+        contentElement.addEventListener(
+            "input",
+            () => {
+
+                this.updateNote(
+                    note.id,
+                    {
+                        text:
+                            contentElement.textContent
+                    }
+                );
+
             }
         );
-    
-        const deleteButton = noteElement.querySelector(".delete-note")
-        deleteButton.addEventListener("click", () =>{
-            this.deleteNote(note.id);
-        });
 
-        this.world.appendChild(noteElement);
+        const deleteButton =
+            noteElement.querySelector(
+                ".delete-note"
+            );
+
+        deleteButton.addEventListener(
+            "click",
+            () => {
+
+                this.deleteNote(note.id);
+
+            }
+        );
+
+        this.world.appendChild(
+            noteElement
+        );
 
         return noteElement;
- 
     }
 
-    handlePointerDown(event){
+    handlePointerDown(event) {
+
         if (event.button !== 0) {
             return;
         }
 
         const target = event.target;
 
-        const noteElement = target.closest(".sticky-note");
+        const noteElement =
+            target.closest(".sticky-note");
 
-        if(noteElement){
+        if (noteElement) {
 
-            const header = target.closest(".note-header");
+            const header =
+                target.closest(".note-header");
 
-            if(!header || target.closest(".delete-note")){
+            if (
+                !header ||
+                target.closest(".delete-note")
+            ) {
                 return;
             }
 
-            const noteId = noteElement.dataset.noteId;
+            const noteId =
+                noteElement.dataset.noteId;
 
-            const note = this.notes.get(noteId);
+            const note =
+                this.#notes.get(noteId);
 
-            if(!note){
+            if (!note) {
                 return;
             }
 
             this.activeInteraction = {
+
                 type: "note-drag",
+
                 noteId,
+
                 startX: event.clientX,
                 startY: event.clientY,
+
                 originalX: note.x,
                 originalY: note.y
             };
 
-            noteElement.classList.add("active");
+            noteElement.classList.add(
+                "active"
+            );
 
-            noteElement.setPointerCapture(event.pointerId);
+            noteElement.setPointerCapture(
+                event.pointerId
+            );
 
             return;
-        }    
+        }
 
-    this.activeInteraction = {
+        this.activeInteraction = {
+
             type: "pan",
+
             startX: event.clientX,
             startY: event.clientY,
+
             originalPanX: this.panX,
             originalPanY: this.panY
         };
 
-    this.viewport.classList.add("is-panning");
+        this.viewport.classList.add(
+            "is-panning"
+        );
 
-    this.viewport.setPointerCapture(event.pointerId);
-
-
+        this.viewport.setPointerCapture(
+            event.pointerId
+        );
     }
 
-    handlePointerMove(event){
+    handlePointerMove(event) {
 
-        const interaction = this.activeInteraction;
+        const interaction =
+            this.activeInteraction;
 
-        if(!interaction){
+        if (!interaction) {
             return;
         }
 
-        const deltaX = event.clientX - interaction.startX;
-        const deltaY = event.clientY - interaction.startY;
+        const deltaX =
+            event.clientX -
+            interaction.startX;
 
+        const deltaY =
+            event.clientY -
+            interaction.startY;
 
-        if(interaction.type === "note-drag"){
-            this.panX = interaction.originalPanX + deltaX;
-            this.panY = interaction.originalPanY + deltaY;
+        if (
+            interaction.type ===
+            "note-drag"
+        ) {
+
+            const note =
+                this.#notes.get(
+                    interaction.noteId
+                );
+
+            if (!note) {
+                return;
+            }
+
+            note.x =
+                interaction.originalX +
+                deltaX / this.scale;
+
+            note.y =
+                interaction.originalY +
+                deltaY / this.scale;
+
+            const noteElement =
+                this.world.querySelector(
+                    `[data-note-id="${note.id}"]`
+                );
+
+            if (noteElement) {
+
+                noteElement.style.left =
+                    `${note.x}px`;
+
+                noteElement.style.top =
+                    `${note.y}px`;
+            }
+
+            return;
+        }
+
+        if (
+            interaction.type ===
+            "pan"
+        ) {
+
+            this.panX =
+                interaction.originalPanX +
+                deltaX;
+
+            this.panY =
+                interaction.originalPanY +
+                deltaY;
 
             this.updateWorldTransform();
         }
@@ -252,21 +473,36 @@ export class CanvasManager{
 
     handlePointerUp(event) {
 
+        const interaction =
+            this.activeInteraction;
+
+        if (!interaction) {
+            return;
+        }
+
         if (
-            this.activeInteraction?.type === "note-drag"
+            interaction.type ===
+            "note-drag"
         ) {
 
             const noteElement =
                 this.world.querySelector(
-                    `[data-note-id="${this.activeInteraction.noteId}"]`
+                    `[data-note-id="${interaction.noteId}"]`
                 );
 
-            noteElement?.classList.remove("active");
+            noteElement?.classList.remove(
+                "active"
+            );
+
+            // Save only once when dragging ends.
+            this.#notifyChange();
         }
 
         this.activeInteraction = null;
 
-        this.viewport.classList.remove("is-panning");
+        this.viewport.classList.remove(
+            "is-panning"
+        );
     }
 
     handleWheel(event) {
@@ -283,29 +519,38 @@ export class CanvasManager{
             event.clientY - rect.top;
 
         const worldBeforeZoom =
-            this.screenToWorld(mouseX, mouseY);
+            this.screenToWorld(
+                mouseX,
+                mouseY
+            );
 
         const zoomFactor =
-            event.deltaY < 0 ? 1.1 : 0.9;
+            event.deltaY < 0
+                ? 1.1
+                : 0.9;
 
         const newScale =
             Math.min(
                 2.5,
                 Math.max(
                     0.4,
-                    this.scale * zoomFactor
+                    this.scale *
+                    zoomFactor
                 )
             );
 
-        this.scale = newScale;
+        this.scale =
+            newScale;
 
         this.panX =
             mouseX -
-            worldBeforeZoom.x * this.scale;
+            worldBeforeZoom.x *
+            this.scale;
 
         this.panY =
             mouseY -
-            worldBeforeZoom.y * this.scale;
+            worldBeforeZoom.y *
+            this.scale;
 
         this.updateWorldTransform();
     }
@@ -322,7 +567,4 @@ export class CanvasManager{
                 ${this.panY}
             )`;
     }
-
-
-
 }
