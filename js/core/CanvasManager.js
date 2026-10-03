@@ -1,9 +1,12 @@
 import { generateId } from "../utils/idgen.js";
+import { HistoryEngine } from "./HistoryEngine.js";
+
 
 export class CanvasManager {
     #notes;
     #nextZIndex;
     #onChange;
+    #history;
 
     constructor(viewport, world, options = {}) {
         this.viewport = viewport;
@@ -13,6 +16,15 @@ export class CanvasManager {
         this.#nextZIndex = 1;
 
         this.#onChange = options.onChange ?? (() => {});
+        this.#history =new HistoryEngine({
+
+        applyAction:
+            (action) => this.#applyAction(action),
+
+        applyInverse:
+            (action) => this.#applyAction(action)
+
+        });
 
         this.panX = viewport.clientWidth / 2;
         this.panY = viewport.clientHeight / 2;
@@ -23,6 +35,76 @@ export class CanvasManager {
 
         this.bindEvents();
         this.updateWorldTransform();
+    }
+    #applyAction(action){
+
+        switch(action.type){
+
+            case "ADD_NOTE":{
+
+                const note = action.payload.note;
+
+                this.#notes.set(note.id, {...note});
+
+                this.renderNote(note);
+
+                break;
+            }
+
+            case "DELETE_NOTE":{
+
+                const id = action.payload.id;
+
+                this.#notes.delete(id);
+
+                const element = this.world.querySelector(`[data-note-id="${id}"]`);
+
+                element?.remove();
+
+                break;
+            }
+
+            case "MOVE_NOTE":{
+
+                const note = this.#notes.get(action.payload.id);
+
+                if(!note){
+                    break;
+                }
+
+                note.x = action.payload.to.x;
+
+                note.y = action.payload.to.y;
+
+                const element = this.world.querySelector(`[data-note-id="${note.id}"]`);
+
+                if(element){
+
+                    element.style.left = `${note.x}px`;
+
+                    element.style.top =`${note.y}px`;
+                }
+                break;
+            }
+
+            case "EDIT_NOTE":{
+
+                const note = this.#notes.get(action.payload.id);
+                if(!note){
+                    break;
+                }
+
+                note.text = action.payload.toText;
+
+                const element = this.world.querySelector(`[data-note-id="${note.id}"]`);
+                if(element){
+                    const content = element.querySelector(".note-content");
+
+                    content.textContent = note.text;
+                }
+                break;
+            }
+        }
     }
 
     // Notifies the application that board state changed.
@@ -100,6 +182,23 @@ export class CanvasManager {
 
         this.renderNote(note);
 
+        this.#history.record({
+            type: "ADD_NOTE",
+            payload:{
+                note: {
+                    ...note
+                }
+            },
+            inverse:{
+                type: "DELETE_NOTE",
+                payload: {
+                    id: note.id
+                }
+            }
+        });
+
+
+
         this.#notifyChange();
 
         return note;
@@ -128,21 +227,29 @@ export class CanvasManager {
     deleteNote(id) {
         console.log("note deleted");
 
-        const note =
-            this.#notes.get(id);
+        const note = this.#notes.get(id);
 
-        if (!note) {
+        if(!note){
             return false;
         }
 
         this.#notes.delete(id);
 
-        const element =
-            this.world.querySelector(
-                `[data-note-id="${id}"]`
-            );
+        const element = this.world.querySelector(`[data-note-id="${id}"]`);
 
         element?.remove();
+
+        this.#history.record({
+            type: "DELETE_NOTE",
+            payload:{note: {...note}},
+            inverse:{
+                type: "ADD_NOTE",
+                payload:{note: {...note}},
+  
+            }
+
+        });
+
 
         this.#notifyChange();
 
@@ -281,42 +388,72 @@ export class CanvasManager {
                 ".note-content"
             );
 
-        contentElement.textContent =
-            note.text;
+        contentElement.textContent = note.text;
 
         // Event listener for editing.
-        contentElement.addEventListener(
-            "input",
-            () => {
+        // contentElement.addEventListener(
+        //     "input",
+        //     () => {
 
-                this.updateNote(
-                    note.id,
-                    {
-                        text:
-                            contentElement.textContent
+        //         this.updateNote(
+        //             note.id,
+        //             {
+        //                 text:
+        //                     contentElement.textContent
+        //             }
+        //         );
+
+        //     }
+        // );
+
+        let editStartText = note.text;
+
+        contentElement.addEventListener("focus", () => {
+            editStartText = contentElement.textContent;
+        });
+
+        contentElement.addEventListener("input", () =>{
+            this.updateNote(note.id, {
+                text: contentElement.textContent
+            });
+        });
+
+        contentElement.addEventListener("blur", () => {
+            const finalText = contentElement.textContent;
+
+            if(finalText == editStartText){
+                return;
+            }
+            this.#history.record({
+                type: "EDIT_NOTE",
+                payload: {
+                    id : note.id,
+                    fromText : editStartText,
+                    toText : finalText
+                },
+                inverse:{
+                    type: "EDIT_NOTE",
+                    payload:{
+                        id: note.id,
+                        fromText : finalText,
+                        toText : editStartText
                     }
-                );
+                }
+            });
+            editStartText = finalText;
+            this.#notifyChange();
+        });
 
-            }
-        );
 
-        const deleteButton =
-            noteElement.querySelector(
-                ".delete-note"
-            );
 
-        deleteButton.addEventListener(
-            "click",
-            () => {
+        const deleteButton = noteElement.querySelector(".delete-note");
 
+        deleteButton.addEventListener("click",() => {
                 this.deleteNote(note.id);
-
             }
         );
 
-        this.world.appendChild(
-            noteElement
-        );
+        this.world.appendChild(noteElement);
 
         return noteElement;
     }
@@ -480,10 +617,48 @@ export class CanvasManager {
             return;
         }
 
-        if (
-            interaction.type ===
-            "note-drag"
-        ) {
+        if(interaction.type === "note-drag"){
+
+            const note = this.#notes.get(interaction.noteId);
+            if(note){
+
+                const moved = note.x !== interaction.originalX || note.y !== interaction.originalY;
+                if(moved){
+
+                    this.#history.record({
+                        type: "MOVE_NOTE",
+                        payload: {
+                            id: note.id,
+                            from: {
+                                x: interaction.originalX,
+                                y: interaction.originalY
+                            },
+                            to: {
+                                x: note.x,
+                                y: note.y
+                            }
+                        },
+                        inverse: {
+                            type: "MOVE_NOTE",
+                            payload: {
+                                id: note.id,
+
+                                from: {
+                                    x: note.x,
+                                    y: note.y
+                                },
+
+                                to: {
+                                    x: interaction.originalX,
+                                    y: interaction.originalY
+                                }
+                            }
+                        }
+                    });
+
+                    this.#notifyChange();
+                }
+            }
 
             const noteElement =
                 this.world.querySelector(
@@ -493,10 +668,11 @@ export class CanvasManager {
             noteElement?.classList.remove(
                 "active"
             );
+        }
 
             // Save only once when dragging ends.
-            this.#notifyChange();
-        }
+        this.#notifyChange();
+        
 
         this.activeInteraction = null;
 
@@ -567,4 +743,33 @@ export class CanvasManager {
                 ${this.panY}
             )`;
     }
+
+    undo(){
+
+        const success = this.#history.undo();
+
+        if(success){
+            this.#notifyChange();
+        }
+
+        return success;
+    }
+    redo(){
+
+        const success = this.#history.redo();
+
+        if(success){
+            this.#notifyChange();
+        }
+
+        return success;
+    }
+
+    canUndo(){
+        return this.#history.canUndo();
+    }
+    canRedo(){
+        return this.#history.canRedo();
+    }
+
 }

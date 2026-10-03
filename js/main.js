@@ -9,9 +9,15 @@ const addNoteButton = document.querySelector("#add-note-btn");
 
 const clearBoardButton = document.querySelector("#clear-board-btn");
 
+const undoButton = document.querySelector("#undo-btn");
+
+const redoButton = document.querySelector("#redo-btn");
+
 
 function persist(snapshot){
     saveBoard(snapshot);
+    updateHistoryButtons();
+
 }
 
 const canvasManager =
@@ -38,4 +44,17 @@ addNoteButton.addEventListener("click", () => {
 clearBoardButton.addEventListener("click", () =>{
     canvasManager.clear();
     clearBoard();
-})
+});
+
+undoButton.addEventListener("click", () =>{
+    canvasManager.undo();
+});
+redoButton.addEventListener("click", () =>{
+    canvasManager.redo();
+});
+
+function updateHistoryButtons(){
+    undoButton.disabled = !canvasManager.canUndo();
+    redoButton.disabled = !canvasManager.canRedo();
+
+}
