@@ -1,5 +1,7 @@
 import { CanvasManager } from "./core/CanvasManager.js";
 import { loadBoard, clearBoard, saveSerializedBoard } from "./utils/storage.js";
+import { NotificationService } from "./services/NotificationService.js";
+import { BroadcastSync } from "./services/BroadcastSync.js";
 
 const viewport = document.querySelector("#canvas-viewport");
 const world = document.querySelector("#canvas-world");
@@ -11,7 +13,8 @@ const saveStatus = document.querySelector("#save-status");
 
 const autosaveWorker = new Worker("./js/workers/autosave.worker.js");
 const syncWorker = new Worker("./js/workers/sync.worker.js");
-
+const notificationService = new NotificationService();
+let broadcastSync = null;
 let latestSnapshot = [];
 
 function persist(snapshot){
@@ -21,8 +24,41 @@ function persist(snapshot){
 }
 
 const canvasManager = new CanvasManager(viewport, world, {
-    onChange: persist
+    onChange: persist,
+    onAction: (action) => {
+        broadcastSync?.broadCastAction(action);
+    }
 });
+
+broadcastSync =
+    new BroadcastSync({
+
+        onRemoteAction:
+            (action, tabId) => {
+
+                const success =
+                    canvasManager
+                        .applyRemoteAction(
+                            action
+                        );
+
+                if (
+                    success &&
+                    document.visibilityState !==
+                        "visible"
+                ) {
+
+                    notificationService.notify(
+                        "ScribbleSync",
+                        {
+                            body:
+                                "A remote tab changed the board."
+                        }
+                    );
+                }
+            }
+    });
+
 
 const savedBoard = loadBoard();
 canvasManager.loadSnapshot(savedBoard);
@@ -84,6 +120,7 @@ window.addEventListener(
         autosaveWorker.terminate();
 
         syncWorker.terminate();
+        broadcastSync?.close();
 
     }
 );
@@ -158,5 +195,17 @@ redoButton.addEventListener(
         canvasManager.redo();
 
         updateHistoryButtons();
+    }
+);
+document.addEventListener(
+    "pointerdown",
+    () => {
+
+        notificationService
+            .requestPermission();
+
+    },
+    {
+        once: true
     }
 );

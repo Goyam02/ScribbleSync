@@ -38,7 +38,7 @@ export class HistoryEngine{
         this.#applyInverse(action.inverse);
 
         this.#cursor--;
-        return true;
+        return action.inverse;
 
     }
 
@@ -52,7 +52,7 @@ export class HistoryEngine{
 
         this.#applyAction(action);
         this.#cursor++;
-        return true;
+        return action;
 
     }
 
