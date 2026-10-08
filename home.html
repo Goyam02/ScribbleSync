@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>ScribbleSync — Local-First Workspace</title>
+
+    <link
+        rel="stylesheet"
+        href="./css/homepage.css"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- ================= NAVBAR ================= -->
+
+    <nav class="navbar">
+
+        <a
+            href="./homepage.html"
+            class="logo"
+        >
+            ScribbleSync
+        </a>
+
+
+        <div class="nav-links">
+
+            <a href="#features">
+                Features
+            </a>
+
+            <a href="#architecture">
+                Architecture
+            </a>
+
+            <a href="#concepts">
+                Concepts
+            </a>
+
+            <a
+                href="./index.html"
+                class="launch-button"
+            >
+                Open Workspace
+            </a>
+
+        </div>
+
+    </nav>
+
+
+
+    <!-- ================= HERO ================= -->
+
+    <section class="hero">
+
+        <div class="hero-content">
+
+            <div class="badge">
+                Local-first • Vanilla JavaScript
+            </div>
+
+
+            <h1>
+                Think. Create.
+                <span>Sync.</span>
+            </h1>
+
+
+            <p>
+                ScribbleSync is an infinite-feeling digital
+                workspace built from the ground up with
+                vanilla JavaScript. Capture ideas with
+                sticky notes, move freely across your canvas,
+                undo and redo your work, and keep multiple
+                tabs synchronized.
+            </p>
+
+
+            <div class="hero-buttons">
+
+                <a
+                    href="./index.html"
+                    class="primary-button"
+                >
+                    Open Workspace
+                </a>
+
+
+                <a
+                    href="#features"
+                    class="secondary-button"
+                >
+                    Explore Features
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ================= FEATURES ================= -->
+
+    <section
+        class="section"
+        id="features"
+    >
+
+        <div class="section-header">
+
+            <div class="section-label">
+                What it does
+            </div>
+
+
+            <h2>
+                Everything you need
+                on one canvas.
+            </h2>
+
+
+            <p>
+                A deliberately minimal workspace focused on
+                interaction, state management, persistence,
+                and browser architecture.
+            </p>
+
+        </div>
+
+
+        <div class="features">
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    01
+                </div>
+
+                <h3>
+                    Infinite Canvas
+                </h3>
+
+                <p>
+                    Pan and zoom around an infinite-feeling
+                    workspace using world coordinates and
+                    CSS transforms.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    02
+                </div>
+
+                <h3>
+                    Sticky Notes
+                </h3>
+
+                <p>
+                    Create, drag, edit, and delete notes
+                    while keeping their state separate
+                    from the DOM.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    03
+                </div>
+
+                <h3>
+                    Undo / Redo
+                </h3>
+
+                <p>
+                    Every mutation becomes an action that
+                    can be replayed forward or reversed
+                    through the history engine.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    04
+                </div>
+
+                <h3>
+                    Local Persistence
+                </h3>
+
+                <p>
+                    Board snapshots are persisted locally
+                    so your workspace can be restored
+                    after a refresh.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    05
+                </div>
+
+                <h3>
+                    Background Autosave
+                </h3>
+
+                <p>
+                    Web Workers handle snapshot serialization
+                    outside the main UI execution path.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    06
+                </div>
+
+                <h3>
+                    Multi-Tab Sync
+                </h3>
+
+                <p>
+                    BroadcastChannel lets separate
+                    ScribbleSync tabs share board actions
+                    in real time.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    07
+                </div>
+
+                <h3>
+                    Notifications
+                </h3>
+
+                <p>
+                    Background tabs can surface remote
+                    board changes through browser
+                    notifications.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    08
+                </div>
+
+                <h3>
+                    Pomodoro Timer
+                </h3>
+
+                <p>
+                    A lightweight work and break timer
+                    that runs independently from canvas
+                    state.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-number">
+                    09
+                </div>
+
+                <h3>
+                    Save Queue
+                </h3>
+
+                <p>
+                    Promise chaining keeps asynchronous
+                    save operations ordered and prevents
+                    overlapping writes.
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ================= ARCHITECTURE ================= -->
+
+    <section
+        class="section"
+        id="architecture"
+    >
+
+        <div class="section-header">
+
+            <div class="section-label">
+                Architecture
+            </div>
+
+
+            <h2>
+                Built around state,
+                not UI.
+            </h2>
+
+        </div>
+
+
+        <div class="architecture">
+
+
+            <div class="architecture-text">
+
+                <p>
+                    ScribbleSync separates application state
+                    from rendering and persistence.
+                    CanvasManager owns the board while
+                    HistoryEngine handles actions and
+                    workers handle background processing.
+                </p>
+
+
+                <p>
+                    Cross-tab communication is handled by
+                    BroadcastChannel, while local persistence
+                    uses localStorage.
+                </p>
+
+
+                <p>
+                    The result is a small but layered
+                    architecture that demonstrates how
+                    browser APIs can work together without
+                    an external framework.
+                </p>
+
+            </div>
+
+
+            <div class="architecture-diagram">
+
+                UI
+                <br>
+                ↓
+                <br>
+                CanvasManager
+                <br>
+                ↓
+                <br>
+                ├── #notes
+                <br>
+                ├── HistoryEngine
+                <br>
+                └── DOM
+                <br>
+                <br>
+                CanvasManager
+                <br>
+                ↓
+                <br>
+                latestSnapshot
+                <br>
+                ↓
+                <br>
+                autosave.worker
+                <br>
+                ↓
+                <br>
+                SaveQueue
+                <br>
+                ↓
+                <br>
+                localStorage
+                <br>
+                <br>
+                CanvasManager
+                <br>
+                ↓
+                <br>
+                BroadcastSync
+                <br>
+                ↓
+                <br>
+                BroadcastChannel
+                <br>
+                ↓
+                <br>
+                Other Tabs
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ================= CONCEPTS ================= -->
+
+    <section
+        class="section"
+        id="concepts"
+    >
+
+        <div class="section-header">
+
+            <div class="section-label">
+                Engineering Concepts
+            </div>
+
+
+            <h2>
+                Technologies with a reason.
+            </h2>
+
+
+            <p>
+                Each browser API solves a specific problem
+                inside the application.
+            </p>
+
+        </div>
+
+
+        <div class="concepts">
+
+
+            <div class="concept">
+
+                <strong>
+                    Private Class Fields
+                </strong>
+
+                <span>
+                    Protect internal board state and
+                    enforce controlled mutations.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    Generators
+                </strong>
+
+                <span>
+                    Step through action history for
+                    replay, undo, and redo.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    Web Workers
+                </strong>
+
+                <span>
+                    Move serialization and background
+                    processing away from the main UI path.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    BroadcastChannel
+                </strong>
+
+                <span>
+                    Communicate board actions between
+                    independent browser tabs.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    localStorage
+                </strong>
+
+                <span>
+                    Persist board snapshots locally
+                    between page reloads.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    Promise Queues
+                </strong>
+
+                <span>
+                    Serialize asynchronous saves so
+                    operations execute in order.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    Cookies
+                </strong>
+
+                <span>
+                    Represent a small simulated
+                    authentication session separately
+                    from application state.
+                </span>
+
+            </div>
+
+
+            <div class="concept">
+
+                <strong>
+                    Browser Notifications
+                </strong>
+
+                <span>
+                    Surface remote changes when the
+                    workspace is running in the background.
+                </span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ================= CTA ================= -->
+
+    <section class="cta">
+
+        <h2>
+            Ready to build?
+        </h2>
+
+
+        <p>
+            Open the workspace and start turning your
+            ideas into notes.
+        </p>
+
+
+        <a
+            href="./index.html"
+            class="cta-button"
+        >
+            Launch ScribbleSync
+        </a>
+
+    </section>
+
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        <span>
+            ScribbleSync
+        </span>
+
+
+        <span>
+            Built with Vanilla JavaScript
+        </span>
+
+    </footer>
+
+
+</body>
+
+</html>
