@@ -215,3 +215,16 @@ button:disabled {
     color: #777;
     margin-left: 10px;
 }
+
+#timer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 12px;
+}
+
+#timer-display {
+    font-size: 14px;
+    min-width: 42px;
+}
